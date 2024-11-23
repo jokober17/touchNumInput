@@ -31,7 +31,7 @@ uint8_t touchNumInput::init(uint16_t x, uint16_t y, uint8_t mode, TFT_eSPI *tft)
   highlightColor = TFT_WHITE;
   highlightBackColor = TFT_BLACK;
   disabledColor = TFT_LIGHTGREY;
-  _font = FF22;
+  _font = &FreeSansBold12pt7b;
   _enabled = false;
   _isVisible = false;
   _lastHighlighted = -1;
@@ -72,7 +72,7 @@ uint8_t touchNumInput::show(void) {
     _tft->drawFastVLine(_x+120, _y, 120, frameColor);
     _tft->drawFastVLine(_x+160, _y, 120, frameColor);
     // set and draw text
-    _tft->setFreeFont(FF22);
+    _tft->setFreeFont(&FreeSansBold12pt7b);
     _tft->setTextDatum(MC_DATUM);
     x = _x + 20;
     y = _y + 20;
@@ -101,7 +101,7 @@ uint8_t touchNumInput::show(void) {
     }
 
     // set and draw text
-    _tft->setFreeFont(FF22);
+    _tft->setFreeFont(&FreeSansBold12pt7b);
     _tft->setTextDatum(MC_DATUM);
     x = _x + 19;
     y = _y + 19;
@@ -131,7 +131,7 @@ uint8_t touchNumInput::show(void) {
     _tft->drawFastVLine(_x+320, _y, 80, frameColor);
 
     // set and draw text
-    _tft->setFreeFont(FF22);
+    _tft->setFreeFont(&FreeSansBold12pt7b);
     _tft->setTextDatum(MC_DATUM);
     x = _x + 20;
     y = _y + 20;
