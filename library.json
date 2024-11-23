@@ -1,0 +1,16 @@
+{
+  "name": "touchNumInput",
+  "version": "1.0.0",
+  "description": "library to draw num input field and manage input via touch",
+  "keywords": "num, input, touch, LCD",
+  "authors":
+  [
+    {
+      "name": "Jochen Kober"
+    }
+  ],
+  "license": "MIT",
+  "frameworks": "Arduino",
+  "headers": ["touchNumInput.h"],
+  "platforms": "*"
+}
