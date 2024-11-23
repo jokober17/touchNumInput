@@ -1,6 +1,6 @@
 
 #include <Arduino.h>
-#include <classes/touchNumInput.h>
+#include <touchNumInput.h>
 
 
 
