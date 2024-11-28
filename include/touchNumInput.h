@@ -2,6 +2,53 @@
   touchNumInput.h - Library for Touch LCD - small number input LCD field
   Created by Jochen Kober, December 2021.
   Released into the public domain.
+
+  VERSION INFO
+
+    V 2.0   First public version
+
+
+
+  NUM_PAD_4X3 (0)
+
+  +---+---+---+---+
+  | 1 | 2 | 3 | 4 |
+  +---+---+---+---+
+  | 5 | 6 | 7 | 8 |
+  +---+---+---+---+
+  | 9 | 0 | , | < |
+  +---+---+---+---+
+
+
+  NUM_PAD_SINGLE_LINE (1)
+
+  +---+---+---+---+---+---+---+---+---+---+---+---+
+  | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0 | , | < |
+  +---+---+---+---+---+---+---+---+---+---+---+---+
+
+
+  NUM_PAD_8X2 (2)
+
+  +---+---+---+---+---+---+---+---+
+  | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+  +---+---+---+---+---+---+---+---+
+  | 9 | 0 | , | + | - | < |  CLR  |
+  +---+---+---+---+---+---+---+---+
+
+
+
+  NUM_PAD_BIG (3)
+
+  +---+---+---+-------+
+  | 7 | 8 | 9 |  CLR  |
+  +---+---+---+-------+
+  | 4 | 5 | 6 |  DEL  |
+  +---+---+---+-------+
+  | 1 | 2 | 3 |       |
+  +---+---+---+   OK  +
+  |+/-| 0 | , |       |
+  +---+---+---+-------+
+
 */
 
 
@@ -10,29 +57,24 @@
 #define _TOUCH_NUMBER_INPUT_
 
 #include <TFT_eSPI.h>
+#include <Free_Fonts.h>
+
+#define PAD_TYPE_COUNT              4
 
 
-
-#define NUM_PAD_1                   0
-#define NUM_PAD_2                   1
-#define NUM_PAD_3                   2
-#define NUM_PAD_4                   3
-#define NUM_PAD_5                   4
-#define NUM_PAD_6                   5
-#define NUM_PAD_7                   6
-#define NUM_PAD_8                   7
-#define NUM_PAD_9                   8
-#define NUM_PAD_0                   9
 #define NUM_PAD_COMMA               10
 #define NUM_PAD_PLUS                11
 #define NUM_PAD_MINUS               12
 #define NUM_PAD_DEL                 13
 #define NUM_PAD_CLEAR               14
-#define NUM_PAD_ALL                 0x7FFF
+#define NUM_PAD_SIGN_TOGGLE         15
+#define NUM_PAD_OK                  16
+#define NUM_PAD_ALL                 0xFFFF
 
 #define MODE_4X3                    0
 #define MODE_SINGLE_LINE            1
 #define MODE_8x2                    2
+#define MODE_BIG                    3
 
 #define ERROR_NONE                  0
 #define ERROR_TFT_NOT_INITIALIZED   1
@@ -44,8 +86,9 @@ class touchNumInput
   public:
     touchNumInput(void);
     uint8_t init(uint16_t x, uint16_t y, uint8_t mode, TFT_eSPI *tft);
+    void setFont(const GFXfont *f);
     uint8_t show(void);
-    uint8_t enable(void (*btnFunction)(uint8_t));
+    uint8_t enable(bool (*CB_numInputChanged)(uint8_t), void (*CB_outputCallback)(float, bool, bool));
     uint8_t disable(void);
     void setDisabledPads(uint16_t mask);
     void setEnabledPads(uint16_t mask);
@@ -54,7 +97,6 @@ class touchNumInput
 
     void isTouched(uint16_t x, uint16_t y);
     void isReleased(void);
-    void setLimits(float min, float max);
     void setDecimals(uint8_t decimals);
 
     float getValue(void) const;
@@ -66,19 +108,35 @@ class touchNumInput
     
   private:
     void checkInput(uint8_t key);
-    void drawPad(uint8_t index, bool isSelected);
+    void drawPad(uint8_t index, bool isSelected, bool skipFill);
     uint8_t selectPad(uint8_t index);
     uint8_t unselectPad(uint8_t index);
 
     uint8_t correctIndex(uint8_t index);
     void setValueString(void);
 
-    const char *_numPad8x2[15] =         { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ".", "+", "-", "<", "CLR"};
-    const uint8_t _referenceTable8x2[15] = {  0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14};
-    const char *_numPad4x3[15] =         { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ".", "<", "", "", ""};
-    const uint8_t _referenceTable4x3[15] = {  0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  13, 13, 13, 13};
-    const char *_numPad12x1[15] =         { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ".", "<", "", "", ""};
-    const uint8_t _referenceTable12x1[15] = {  0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10, 13,  13, 13, 13};
+    // 10 ... ","
+    // 11 ... "+"
+    // 12 ... "-"
+    // 13 ... DEL
+    // 14 ... CLR
+    // 15 ... OK button
+    // 16 ... +/-
+
+    const char *_numPadStr[PAD_TYPE_COUNT][15] = {{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ",", "<", "", "", ""},             // 4x3
+                                                  {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ",", "<", "", "", ""},             // SINGLE_LINE
+                                                  {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ",", "+", "-", "<", "CLR"},        // 8X2
+                                                  {"7", "8", "9", "CLR", "4", "5", "6", "DEL", "1", "2", "3", "OK", "+/-", "0", ","}    // BIG
+                                                 };
+
+    const char _numRefTable[PAD_TYPE_COUNT][15] = {{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 10, 13, 17, 17, 17},
+                                                   {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 10, 13, 17, 17, 17},
+                                                   {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 10, 11, 12, 13, 14},
+                                                   {7, 8, 9, 14, 4, 5, 6, 13, 1, 2, 3, 16, 15, 0, 10}
+                                                  };
+
+    const uint8_t _numPadCount[PAD_TYPE_COUNT] = {12, 12, 15, 15};
+    const uint16_t _numPadSize[PAD_TYPE_COUNT][2] = {{160, 120}, {468, 40}, {320, 80}, {200, 220}};
 
     uint8_t _mode;
 
@@ -100,15 +158,13 @@ class touchNumInput
     const GFXfont  *_font;
     bool    _enabled;
     bool    _isVisible;
+    bool    _okPressed;
     int8_t  _lastHighlighted;
-    void    (*_btnFunction)(uint8_t);
-    float   _minValue;
-    float   _maxValue;
+    bool    (*_numInputChangedCallback)(uint8_t);
+    void    (*_outputCallback)(float value, bool okClicked, bool showDash);
     int8_t  _position;
     uint8_t _decimals;
     float   _value;
-    float   _signedValue;
-    bool    _sign;      // true = poitiv, false = negative
     char    _valueString[15];
 };
 
