@@ -88,7 +88,7 @@ class touchNumInput
     uint8_t init(uint16_t x, uint16_t y, uint8_t mode, TFT_eSPI *tft);
     void setFont(const GFXfont *f);
     uint8_t show(void);
-    uint8_t enable(bool (*CB_numInputChanged)(uint8_t), void (*CB_outputCallback)(float, bool, bool));
+    uint8_t enable(bool (*CB_numInputChanged)(float value), void (*CB_outputCallback)(float value, bool okPressed, bool showComma));
     uint8_t disable(void);
     void setDisabledPads(uint16_t mask);
     void setEnabledPads(uint16_t mask);
@@ -160,7 +160,7 @@ class touchNumInput
     bool    _isVisible;
     bool    _okPressed;
     int8_t  _lastHighlighted;
-    bool    (*_numInputChangedCallback)(uint8_t);
+    bool    (*_numInputChangedCallback)(float newValue);
     void    (*_outputCallback)(float value, bool okClicked, bool showDash);
     int8_t  _position;
     uint8_t _decimals;
