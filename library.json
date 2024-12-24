@@ -1,6 +1,6 @@
 {
   "name": "touchNumInput",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "library to draw num input field and manage input via touch",
   "keywords": "num, input, touch, LCD",
   "authors":
