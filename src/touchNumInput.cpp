@@ -46,7 +46,7 @@ bool    _enabled;
 bool    _isVisible;
 bool    _okPressed;
 int8_t  _lastHighlighted;
-bool    (*_numInputChangedCallback)(uint8_t);
+bool    (*_numInputChangedCallback)(float newValue);
 void    (*_outputCallback)(float value, bool okClicked, bool showDash);
 int8_t  _position;
 uint8_t _decimals;
@@ -258,7 +258,7 @@ uint8_t touchNumInput::unselectPad(uint8_t index) {
 ** Function name:           enable
 ** Description:             enable number input field
 ***************************************************************************************/
-uint8_t touchNumInput::enable(bool (*CB_numInputChanged)(uint8_t) = NULL, void (*CB_outputCallback)(float, bool, bool) = NULL) {
+uint8_t touchNumInput::enable(bool (*CB_numInputChanged)(float) = NULL, void (*CB_outputCallback)(float, bool, bool) = NULL) {
   if (_tft == NULL) return(ERROR_TFT_NOT_INITIALIZED);
   _enabled = true;
   _numInputChangedCallback = CB_numInputChanged;
@@ -413,18 +413,24 @@ void touchNumInput::isTouched(uint16_t x, uint16_t y) {
 ***************************************************************************************/
 void touchNumInput::isReleased(void) {
   bool ret = true;
+  float prevValue;
 
   if (_enabled && _lastHighlighted != -1) {
     unselectPad(_lastHighlighted);
     selectedPad = _lastHighlighted;
     _lastHighlighted = -1;
 
-    // call function if defined
-    if (_numInputChangedCallback != NULL) ret = _numInputChangedCallback(selectedPad);
+    // save actual value
+    prevValue = _value;
+    checkInput(selectedPad);
+    if (_numInputChangedCallback != NULL) ret = _numInputChangedCallback(_value);
     if (ret == true) {
-      checkInput(selectedPad);
       if (_outputCallback != NULL)  _outputCallback(_value, _okPressed, _position>0? false:true);
       // reset ok pressed flag
+      _okPressed = false;
+    }
+    else {
+      _value = prevValue;
       _okPressed = false;
     }
   }
