@@ -2,57 +2,6 @@
 #include <Arduino.h>
 #include <touchNumInput.h>
 
-const char *_numPadStr[PAD_TYPE_COUNT][15] = {{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ",", "<", "", "", ""},             // 4x3
-                                              {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ",", "<", "", "", ""},             // SINGLE_LINE
-                                              {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ",", "+", "-", "<", "CLR"},        // 8X2
-                                              {"7", "8", "9", "CLR", "4", "5", "6", "DEL", "1", "2", "3", "OK", "+/-", "0", ","}    // BIG
-                                              };
-
-const char _numRefTable[PAD_TYPE_COUNT][15] = {{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 10, 13, 17, 17, 17},
-                                                {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 10, 13, 17, 17, 17},
-                                                {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 10, 11, 12, 13, 14},
-                                                {7, 8, 9, 14, 4, 5, 6, 13, 1, 2, 3, 16, 15, 0, 10}
-                                              };
-
-const uint8_t _numPadCount[PAD_TYPE_COUNT] = {12, 12, 15, 15};
-const uint16_t _numPadSize[PAD_TYPE_COUNT][2] = {{160, 120}, {468, 40}, {320, 80}, {200, 220}};
-
-
-int8_t  selectedPad;
-uint16_t frameColor;   // number pad frame / line color
-uint16_t textColor;    // text color if enabled and not highlighted
-uint16_t backColor;    // back color if not selected
-uint16_t highlightBackColor;
-uint16_t highlightColor;
-uint16_t disabledColor;
-
-// 10 ... ","
-// 11 ... "+"
-// 12 ... "-"
-// 13 ... DEL
-// 14 ... CLR
-// 15 ... +/-
-// 16 ... OK button
-uint8_t _mode;
-
-
-TFT_eSPI *_tft;
-uint16_t _x;
-uint16_t _y;
-uint16_t _enabledPad;
-uint16_t _userDisabledPad;
-const GFXfont  *_font;
-bool    _enabled;
-bool    _isVisible;
-bool    _okPressed;
-int8_t  _lastHighlighted;
-bool    (*_numInputChangedCallback)(float newValue);
-void    (*_outputCallback)(float value, bool okClicked, bool showDash);
-int8_t  _position;
-uint8_t _decimals;
-float   _value;
-char    _valueString[15];
-
 
 
 /***************************************************************************************
@@ -258,7 +207,7 @@ uint8_t touchNumInput::unselectPad(uint8_t index) {
 ** Function name:           enable
 ** Description:             enable number input field
 ***************************************************************************************/
-uint8_t touchNumInput::enable(bool (*CB_numInputChanged)(float) = NULL, void (*CB_outputCallback)(float, bool, bool) = NULL) {
+uint8_t touchNumInput::enable(bool (*CB_numInputChanged)(float newValue) = NULL, void (*CB_outputCallback)(float value, bool okPressed, bool showComma) = NULL) {
   if (_tft == NULL) return(ERROR_TFT_NOT_INITIALIZED);
   _enabled = true;
   _numInputChangedCallback = CB_numInputChanged;
