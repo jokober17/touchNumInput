@@ -43,9 +43,8 @@ uint8_t touchNumInput::init(uint16_t x, uint16_t y, uint8_t mode, TFT_eSPI *tft)
   _position = 1;
   _decimals = 3;
   _value = 0;
+  _isNeg = false;
   selectedPad = -1;
-
-  if (_mode == MODE_8x2) _userDisabledPad = (1 << NUM_PAD_PLUS | 1 << NUM_PAD_MINUS);
   return(ERROR_NONE);
 }
 
@@ -390,6 +389,7 @@ void touchNumInput::isReleased(void) {
 ** Description:             get actual float value
 ***************************************************************************************/
 float touchNumInput::getValue(void) const {
+  if (_isNeg) return(-_value);
   return(_value);
 }
 
@@ -398,28 +398,32 @@ float touchNumInput::getValue(void) const {
 ** Description:             get actual float value as string
 ***************************************************************************************/
 char *touchNumInput::getValueString(void) {
+  float tmp;
+
+  tmp = _isNeg? -_value : _value;
+
   // calc new value string & return
   switch(_position) {
     case 0:
-      sprintf(_valueString, "%.0f,", _value);
+      sprintf(_valueString, "%.0f.", tmp);
       break;
     case 1 ... 9:
-      sprintf(_valueString, "%.0f", _value);
+      sprintf(_valueString, "%.0f", tmp);
       break;
     case -1:
-      sprintf(_valueString, "%.1f", _value);
+      sprintf(_valueString, "%.1f", tmp);
       break;
     case -2:
-      sprintf(_valueString, "%.2f", _value);
+      sprintf(_valueString, "%.2f", tmp);
       break;
     case -3:
-      sprintf(_valueString, "%.3f", _value);
+      sprintf(_valueString, "%.3f", tmp);
       break;
     case -4:
-      sprintf(_valueString, "%.4f", _value);
+      sprintf(_valueString, "%.4f", tmp);
       break;
     case -5:
-      sprintf(_valueString, "%.5f", _value);
+      sprintf(_valueString, "%.5f", tmp);
       break;
   }
   return(_valueString);
@@ -430,7 +434,9 @@ char *touchNumInput::getValueString(void) {
 ** Description:             set actual value
 ***************************************************************************************/
 void touchNumInput::setValue(float value) {
-  _value = value;
+  _value = abs(value);
+
+  _isNeg = (value < 0.0) true : false;
 
   if (value == 0.0) {
     _position = 1;
@@ -446,6 +452,9 @@ void touchNumInput::setValue(float value) {
       disablePad(NUM_PAD_COMMA, true);
     }
   }
+
+  // update enabled pads
+  setPlusMinusPad();
 }
 
 /***************************************************************************************
@@ -454,6 +463,24 @@ void touchNumInput::setValue(float value) {
 ***************************************************************************************/
 uint8_t touchNumInput::correctIndex(uint8_t index) {
   return (_numRefTable[_mode][index]);
+}
+
+/***************************************************************************************
+** Function name:           setPlusMinusPad
+** Description:             
+***************************************************************************************/
+void touchNumInput::setPlusMinusPad() {
+  // enable/disable +/- in mode 8x2
+  if (_mode == MODE_8x2) {
+    if (_isNeg) {
+      disablePad(NUM_PAD_MINUS);
+      enablePad(NUM_PAD_PLUS);
+    }
+    else {
+      enablePad(NUM_PAD_MINUS);
+      disablePad(NUM_PAD_PLUS);
+    }
+  }
 }
 
 /***************************************************************************************
@@ -468,22 +495,14 @@ void touchNumInput::checkInput(uint8_t index) {
   switch(index) {
     case 0 ... 9:
       if (_position > 0) {
-        if (index == 0) _value *= 10;
-        else {
-          if (_value >= 0)   _value = (_value * 10) + index;
-          else
-            _value = (_value * 10) - index;
-        }
-          
+        _value = (_value * 10) + index;       
         _position = 1;
       }
       else {
         if (_position != -_decimals) {
           _position--;
           if (index != 0) {
-            if (_value >= 0) _value = _value + (index * pow10(_position));
-            else
-              _value = _value - (index * pow10(_position));
+            _value = _value + (index * pow10(_position));
           }
         }
       }
@@ -498,7 +517,7 @@ void touchNumInput::checkInput(uint8_t index) {
 
     case NUM_PAD_PLUS:
     case NUM_PAD_MINUS:
-      _value = -_value;
+      _isNeg = !_isNeg;
       break;
 
     case NUM_PAD_DEL:
@@ -529,12 +548,13 @@ void touchNumInput::checkInput(uint8_t index) {
       break;
 
     case NUM_PAD_SIGN_TOGGLE:
-      _value = -_value;
+      _isNeg = !_isNeg;
       break;
 
     case NUM_PAD_CLEAR:
       _value = 0;
       _position = 1;
+      _isNeg = false;
       if (_decimals > 0) enablePad(NUM_PAD_COMMA, true);
       break;
 
@@ -543,20 +563,7 @@ void touchNumInput::checkInput(uint8_t index) {
       return;
   }
 
-  // enable/disable +/- in mode 8x2
-  if (_mode == MODE_8x2) {
-    if (_value < 0) {
-      disablePad(NUM_PAD_MINUS, true);
-      enablePad(NUM_PAD_PLUS, true);
-    }
-    else if (_value > 0) {
-      enablePad(NUM_PAD_MINUS, true);
-      disablePad(NUM_PAD_PLUS, true);
-    }
-    else {
-      disablePad(NUM_PAD_MINUS, true);
-      disablePad(NUM_PAD_PLUS, true);
-    }
-  }
+  // update enabled pads
+  setPlusMinusPad();
 }
 
