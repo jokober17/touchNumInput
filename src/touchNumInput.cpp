@@ -400,7 +400,7 @@ float touchNumInput::getValue(void) const {
 char *touchNumInput::getValueString(void) {
   float tmp;
 
-  tmp = _isNeg? -_value : _value;
+  tmp = (_isNeg)? -_value : _value;
 
   // calc new value string & return
   switch(_position) {
@@ -436,7 +436,7 @@ char *touchNumInput::getValueString(void) {
 void touchNumInput::setValue(float value) {
   _value = abs(value);
 
-  _isNeg = (value < 0.0) true : false;
+  _isNeg = (value < 0.0)? true : false;
 
   if (value == 0.0) {
     _position = 1;
